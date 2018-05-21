@@ -3,11 +3,10 @@ package libs
 import (
 	"encoding/json"
 	"bytes"
-	"net/http"
-	"fmt"
-	"io/ioutil"
-	"github.com/unknowname/prome-auto/prome"
 	"strings"
+	"crypto/md5"
+	"io"
+	"fmt"
 )
 
 //传入待JSON化的struct数据，转换成HTTP POST Data
@@ -19,19 +18,6 @@ func ToHttpData(i interface{}) (buffer *bytes.Buffer, err error) {
 	return buffer, err
 }
 
-//传入返回JSON的URL以及定义后的struct。返回JSON化后struct
-func GetServicesData(url string, i *prome.ServicesData) error {
-	resp, err := http.Get(url)
-	if err == nil {
-		respByte, _ := ioutil.ReadAll(resp.Body)
-		err = json.Unmarshal(respByte, i)
-		defer resp.Body.Close()
-	} else {
-		fmt.Print("获取URL失败 ", err)
-	}
-	return err
-}
-
 //检查用户提供的Prometheus服务器格式正确
 func CheckHost(host string) bool {
 	if strings.HasPrefix(host, "http://") || strings.HasPrefix(host, "https://") {
@@ -40,17 +26,9 @@ func CheckHost(host string) bool {
 	return false
 }
 
-//构造并初始化Rule
-func CreateRule(item string) *prome.Rule {
-	labe := make(map[string]string)
-	annot := make(map[string]string)
-	project, app := ParseProjectApp(item)
-	labe["project"] = project
-	labe["app"] = app
-	return &prome.Rule{
-		Alert:       item,
-		Expr:        item,
-		Labels:      labe,
-		Annotations: annot,
-	}
+//获取alertRule配置文件的MD5值
+func GetMd5(conf string) string {
+	t := md5.New()
+	io.WriteString(t,conf)
+	return fmt.Sprintf("%x",t.Sum(nil))
 }

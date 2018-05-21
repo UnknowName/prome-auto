@@ -6,42 +6,66 @@ import (
 	"github.com/unknowname/prome-auto/prome"
 	"fmt"
 	"time"
+	"github.com/unknowname/prome-auto/hicicd"
+	goini "github.com/zieckey/goini"
 )
 
-const path  = "/api/v1/query?query=changes(istio_request_count{}[15m])"
+const path  = "/api/v1/query?query=istio_request_count"
 
 func main() {
-	//latestConf从文件中读取。key为文件名，value为文件内容
-	var latestConf string
+	var latestMd5 string
+	confFile := os.Args[1]
+	latestMd5 = NewRun(confFile, latestMd5)
 	for {
-		run(latestConf)
-		time.Sleep(time.Second * 5)
+		currMd5 := NewRun(confFile, latestMd5)
+		latestMd5 = currMd5
+		time.Sleep(time.Second * 15)
 	}
 }
 
-func run(conf string)  {
-	fmt.Print("Start Programing...\n")
-    serviceData := prome.NewServicesData()
-    args := os.Args[:]
-    if len(args) != 2 {
-    	fmt.Print("请提供Prometheus服务器地址参数！\n")
-    	os.Exit(5)
+func NewRun(confFile, latestMd5 string) ( md5 string) {
+	//初始化一些变量待用
+	serviceData := prome.NewServicesData()
+	ini := goini.New()
+	err := ini.ParseFile(confFile)
+	if err != nil {
+		fmt.Print("Parse conf.ini Failed \n")
+		return
 	}
-	prometheusHost := args[1]
-    if libs.CheckHost(prometheusHost) {
-    	if err := libs.GetServicesData(prometheusHost+path, serviceData);err == nil {
-    		fmt.Print("OK")
-    		confStr := prome.CreateRuleConfig(*serviceData)
-    		if conf == "" {
-    			fmt.Print("新建ConfigMap")
+	prometheusHost,_ := ini.SectionGet("prometheus", "host")
+	hicicdHost,_ := ini.SectionGet("hicicd", "host")
+	username,_ := ini.SectionGet("hicicd", "username")
+	password,_ := ini.SectionGet("hicicd", "password")
+	if libs.CheckHost(prometheusHost) && libs.CheckHost(hicicdHost) {
+		if err := prome.GetServicesData(prometheusHost+path, serviceData);err == nil {
+			confStr := prome.CreateRuleConfig(*serviceData)
+			if libs.GetMd5(confStr) != latestMd5 {
+				if token,err := hicicd.Login(hicicdHost, username, password);err == nil {
+				   if err := hicicd.CreateConf(token, hicicdHost, "", "", confStr);err == nil {
+				   	  fmt.Print("更新ConfigMap成功\n睡眠10秒，稍后重载Prometheus\n")
+				   	  time.Sleep(time.Second * 10)
+				   	  if err := prome.ReloadServer(prometheusHost);err == nil {
+				   	  	 fmt.Print("重载Prometheus成功\n")
+				   	  	 md5 = libs.GetMd5(confStr)
+					  }else {
+					  	fmt.Print("重载Prometheus失败！", err, "\n")
+					  }
+				   }else {
+				   	fmt.Print("创建ConfgMap失败 ", err,"\n")
+				   }
+				}else {
+					fmt.Print("Get Token Failed! ",err,"\n")
+				}
+			}else {
+				fmt.Print("未检测到有新指标可加入监控,休眠15秒后再监测\n")
+				md5 = latestMd5
 			}
-    		fmt.Print(confStr)
-    		//如果confStr与上一次不一致，说明新的服务加入进来。需要修改configMap
 		}else {
-			fmt.Print("错误，获取接口数据异常。15秒后将进行重试\n")
+			fmt.Print("获取接口数据异常，原因：", err,"\n")
 		}
+
 	}else {
-		fmt.Print("请提供正确的Prometheus服务器地址。如 http://localhost:9090\n")
-		os.Exit(5)
+		fmt.Print("配置文件Prometheus host格式有误，请以http://或者hppts://为前缀\n")
 	}
+	return md5
 }
