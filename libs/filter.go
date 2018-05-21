@@ -26,7 +26,8 @@ func GetItemAttr(itemStr string) string {
 //提前项目名称与应用名称
 func ParseProjectApp(item string) (project, app string) {
 	//item = "demo-consumer.demo-dev.svc.cluster.local"
-	reg := regexp.MustCompile(`([a-z]+-[a-z]+)\.([a-z]+-[a-z]+).svc.*`)
+	//reg := regexp.MustCompile(`([a-z]+-[a-z]+)\.([a-z]+-[a-z]+).svc.*`)
+	reg := regexp.MustCompile(`(.*)\.(.*).svc.*`)
 	matchs := reg.FindStringSubmatch(item)
 	matchsLength := len(matchs)
 	if matchsLength < 3 {

@@ -3,6 +3,7 @@ package libs
 import (
 	"testing"
 	"fmt"
+	"github.com/magiconair/properties/assert"
 )
 
 func TestFilterItem(t *testing.T) {
@@ -16,6 +17,10 @@ func TestGetItemAttr(t *testing.T) {
 }
 
 func TestParseProjectApp(t *testing.T) {
-	namespace,app := ParseProjectApp("demo-consumer.demo-dev.svc.cluster.local")
-	fmt.Print(namespace,app)
+	namespace,app := ParseProjectApp("details.tutorial.svc.cluster.local")
+	assert.Equal(t, "tutorial", namespace)
+	assert.Equal(t, app, "details")
+	project,app := ParseProjectApp("demo-provider.demo-dev.svc.cluster.local")
+	assert.Equal(t,project,"demo-dev")
+	assert.Equal(t, app, "demo-provider")
 }
