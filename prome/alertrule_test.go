@@ -27,3 +27,20 @@ func TestCheng(t *testing.T){
 	}
 	fmt.Print(string(d))
 }
+
+func TestGroups_AddGroup(t *testing.T) {
+	rule := Rule{}
+	rule.Alert = "ssssss"
+	rule.Expr = "gothread > 10"
+	group := Group{}
+	groups := Groups{}
+	group.AddRule(rule)
+	groups.AddGroup(group)
+	fmt.Print(groups)
+}
+
+func TestNewRule(t *testing.T) {
+	dic := make(map[string]string)
+	rule := NewRule("test", "gothares", dic, dic)
+	fmt.Print(rule)
+}

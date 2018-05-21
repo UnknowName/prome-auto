@@ -1,22 +1,14 @@
 package libs
 
 import (
-	"github.com/unknowname/prome-auto/prome"
+	"encoding/json"
+	"bytes"
 	"net/http"
 	"fmt"
 	"io/ioutil"
-	"encoding/json"
-	"bytes"
+	"github.com/unknowname/prome-auto/prome"
+	"strings"
 )
-
-const path = "configMap/add"
-
-//ConfigMap接口要求数据结构
-type PostData struct {
-	Name      string            `json:"name"`
-	NameSpace string            `json:"namespace"`
-	Data      map[string]string `json:"data"`
-}
 
 //传入待JSON化的struct数据，转换成HTTP POST Data
 func ToHttpData(i interface{}) (buffer *bytes.Buffer, err error) {
@@ -27,23 +19,38 @@ func ToHttpData(i interface{}) (buffer *bytes.Buffer, err error) {
 	return buffer, err
 }
 
-//访问Prometheus的指标接口，获取所有指标
-func GetPromeItems(host string) (datas []string) {
-	data := prome.ItemData{}
-	url := host + prome.ApiAddr
+//传入返回JSON的URL以及定义后的struct。返回JSON化后struct
+func GetServicesData(url string, i *prome.ServicesData) error {
 	resp, err := http.Get(url)
-	defer resp.Body.Close()
-	if err != nil {
-		fmt.Print("Error ", err)
+	if err == nil {
+		respByte, _ := ioutil.ReadAll(resp.Body)
+		err = json.Unmarshal(respByte, i)
+		defer resp.Body.Close()
+	} else {
+		fmt.Print("获取URL失败 ", err)
 	}
-	respByte, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Print("Error", err)
+	return err
+}
+
+//检查用户提供的Prometheus服务器格式正确
+func CheckHost(host string) bool {
+	if strings.HasPrefix(host, "http://") || strings.HasPrefix(host, "https://") {
+		return true
 	}
-	if err := json.Unmarshal(respByte, &data); err == nil {
-		if data.Status == "success" {
-			datas = data.Data
-		}
+	return false
+}
+
+//构造并初始化Rule
+func CreateRule(item string) *prome.Rule {
+	labe := make(map[string]string)
+	annot := make(map[string]string)
+	project, app := ParseProjectApp(item)
+	labe["project"] = project
+	labe["app"] = app
+	return &prome.Rule{
+		Alert:       item,
+		Expr:        item,
+		Labels:      labe,
+		Annotations: annot,
 	}
-	return datas
 }
