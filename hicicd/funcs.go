@@ -9,18 +9,10 @@ import (
 	"strings"
 	"encoding/json"
 	"time"
+	"github.com/unknowname/prome-auto/libs"
 )
 
-//传入待JSON化的Struce数据，转换成HTTP POST Data
-func ToHttpData(i interface{}) (buffer *bytes.Buffer, err error) {
-	jsonByte, err := json.Marshal(i)
-	if err == nil {
-		buffer = bytes.NewBuffer(jsonByte)
-	}
-	return buffer, err
-}
-
-//通过HTTP登陆，返回Token
+//Login get token
 func Login(host, username, password string) (token string, err error) {
 	url := host + "/user/login/"
 	myAuth := Token{Username: username, Password: password}
@@ -43,7 +35,7 @@ func Login(host, username, password string) (token string, err error) {
 			}
 		}
 	} else {
-		//隐藏登陆完整URL信息
+		//Hidden login url
 		errs := strings.Split(err.Error(), ":")
 		err = errors.New(errs[len(errs)-1])
 	}
@@ -51,6 +43,7 @@ func Login(host, username, password string) (token string, err error) {
 	return token, err
 }
 
+//Create ConfigMap on OpenShift
 func CreateConf(token, server, name, namespace, confStr string) error {
 	if name == "" {
 		name = "prometheus-rule"
@@ -63,15 +56,15 @@ func CreateConf(token, server, name, namespace, confStr string) error {
 	serverResp := Response{}
 	data := make(map[string]string)
 	data[fileName] = confStr
-	url :=  server + "/configMap/add"
+	url := server + "/configMap/add"
 	confMap := ConfMap{
 		Name:      name,
 		NameSpace: namespace,
 		Data:      data,
 	}
 	client := &http.Client{Timeout: 600 * time.Second}
-	postData, err := ToHttpData(confMap)
-	req, err := http.NewRequest("POST",url,postData)
+	postData, err := libs.ToHttpData(confMap)
+	req, err := http.NewRequest("POST", url, postData)
 	if err == nil {
 		req.Header.Add("Authorization", "Bearer "+token)
 	}
@@ -93,4 +86,3 @@ func CreateConf(token, server, name, namespace, confStr string) error {
 	defer resp.Body.Close()
 	return err
 }
-

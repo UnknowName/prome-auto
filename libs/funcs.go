@@ -1,15 +1,17 @@
 package libs
 
 import (
-	"encoding/json"
 	"bytes"
-	"strings"
 	"crypto/md5"
-	"io"
+	"encoding/json"
 	"fmt"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
-//传入待JSON化的struct数据，转换成HTTP POST Data
+//Translate struct data to Http data
 func ToHttpData(i interface{}) (buffer *bytes.Buffer, err error) {
 	jsonByte, err := json.Marshal(i)
 	if err == nil {
@@ -18,7 +20,7 @@ func ToHttpData(i interface{}) (buffer *bytes.Buffer, err error) {
 	return buffer, err
 }
 
-//检查用户提供的Prometheus服务器格式正确
+//Check host  string format
 func CheckHost(host string) bool {
 	if strings.HasPrefix(host, "http://") || strings.HasPrefix(host, "https://") {
 		return true
@@ -26,9 +28,37 @@ func CheckHost(host string) bool {
 	return false
 }
 
-//获取alertRule配置文件的MD5值
+//Get Prometheus alert rule string md5
 func GetMd5(conf string) string {
 	t := md5.New()
-	io.WriteString(t,conf)
-	return fmt.Sprintf("%x",t.Sum(nil))
+	io.WriteString(t, conf)
+	return fmt.Sprintf("%x", t.Sum(nil))
+}
+
+//Check user input params
+func CheckParams(args []string) bool {
+	if len(args) != 2 {
+		fmt.Printf("Use %s  %s", args[0], "ConfigFile\n")
+		fmt.Print("Example:\n prome-auto conf.ini\n")
+		return false
+	}
+	confFile, _ := filepath.Abs(args[1])
+	if pathExists(confFile) {
+		return true
+	}
+	return false
+}
+
+//Check File Exist
+func pathExists(path string) bool {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true
+	}
+	if os.IsNotExist(err) {
+		fmt.Printf("Config file %s not found\n", path)
+		return false
+	}
+	fmt.Printf("Config file %s not found\n", path)
+	return false
 }

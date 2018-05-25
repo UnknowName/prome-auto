@@ -14,7 +14,7 @@ import (
 const exprBase = `changes(istio_request_count{destination_service="%s",destination_version="%s",response_code="%s"}[1m])` +
 	` != 0`
 
-//创建Prometheus的AlertRule配置文件字符串
+//Create Prometheus AlertRule string
 func CreateRuleConfig(data ServicesData) string {
 	groups := Groups{}
 	group := Group{}
@@ -42,7 +42,7 @@ func CreateRuleConfig(data ServicesData) string {
 	return string(confByte)
 }
 
-//构造并初始化Rule
+//Init a New alert rule
 func CreateRule(item string) *Rule {
 	labe := make(map[string]string)
 	annot := make(map[string]string)
@@ -57,7 +57,7 @@ func CreateRule(item string) *Rule {
 	}
 }
 
-//传入返回JSON的URL以及定义后的struct。返回JSON化后struct
+//Access API and return struct data
 func GetServicesData(url string, i *ServicesData) error {
 	resp, err := http.Get(url)
 	if err == nil {
@@ -70,9 +70,9 @@ func GetServicesData(url string, i *ServicesData) error {
 	return err
 }
 
-//重新加载Prometheus
-func ReloadServer(server string) error{
+//Reload Prometheus
+func ReloadServer(server string) error {
 	reloadPath := "/-/reload"
 	_, err := http.Post(server+reloadPath, "", bytes.NewBuffer([]byte("")))
-	return  err
+	return err
 }

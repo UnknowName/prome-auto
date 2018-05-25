@@ -4,7 +4,7 @@ import (
 	"regexp"
 )
 
-//过滤出带有healthy结尾的指标
+//Filter  end with healthy item
 func FilterItem(item string) string{
 	reg := regexp.MustCompile(`\w.*http.*healthy$`)
 	if reg.MatchString(item){
@@ -13,17 +13,7 @@ func FilterItem(item string) string{
 	return ""
 }
 
-//通过正则，将应用名与项目名称一起提取出来
-func GetItemAttr(itemStr string) string {
-	reg := regexp.MustCompile(`([a-z]+_){3}(\w+)_svc`)
-	matchs := reg.FindStringSubmatch(itemStr)
-	if len(matchs) != 0 {
-		return matchs[len(matchs)-1]
-	}
-	return ""
-}
-
-//提取项目名称与应用名称
+//Parse the project and app from item
 func ParseProjectApp(item string) (project, app string) {
 	reg := regexp.MustCompile(`(.*)\.(.*).svc.*`)
 	matchs := reg.FindStringSubmatch(item)

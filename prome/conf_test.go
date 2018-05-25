@@ -12,6 +12,6 @@ func TestCreateRuleConfig(t *testing.T) {
 
 func TestReloadServer(t *testing.T) {
 	server := "http://prometheus-istio-system.apps.oc.com"
-    err := ReloadServer(server)
-    assert.Equal(t,err, nil)
+	err := ReloadServer(server)
+	assert.Equal(t, err, nil)
 }
