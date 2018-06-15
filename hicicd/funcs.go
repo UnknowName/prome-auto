@@ -76,7 +76,7 @@ func CreateConf(token, server, name, namespace, confStr string) error {
 	respByte, _ := ioutil.ReadAll(resp.Body)
 	err = json.Unmarshal(respByte, &serverResp)
 	if err == nil {
-		if serverResp.Code == 200 && serverResp.Message == "success" {
+		if serverResp.Code == 200 && serverResp.Message == "Success" {
 			err = nil
 		} else {
 			fmt.Print("Error occur at ", err)

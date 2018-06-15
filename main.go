@@ -1,18 +1,19 @@
 package main
 
 import (
-	"fmt"
 	"github.com/unknowname/prome-auto/hicicd"
 	"github.com/unknowname/prome-auto/libs"
 	"github.com/unknowname/prome-auto/prome"
 	"github.com/zieckey/goini"
 	"os"
 	"time"
+	"log"
 )
 
 const path = "/api/v1/query?query=istio_request_count"
 
 func main() {
+	log.Print("程序启动...")
 	var latestMd5 string
 	args := os.Args[:]
 	if !libs.CheckParams(args) {
@@ -33,7 +34,7 @@ func newRun(confFile, latestMd5 string) (md5 string) {
 	ini := goini.New()
 	err := ini.ParseFile(confFile)
 	if err != nil {
-		fmt.Print("Parse conf.ini Failed \n")
+		log.Print("读取配置文件失败！请确认配置文件合法！\n")
 		return
 	}
 	prometheusHost, _ := ini.SectionGet("prometheus", "host")
@@ -44,32 +45,34 @@ func newRun(confFile, latestMd5 string) (md5 string) {
 		if err := prome.GetServicesData(prometheusHost+path, serviceData); err == nil {
 			confStr := prome.CreateRuleConfig(*serviceData)
 			if libs.GetMd5(confStr) != latestMd5 {
+				log.Print("检测到Prometheus API接口有新数据，执行更新ConfgMap动作\n")
 				if token, err := hicicd.Login(hicicdHost, username, password); err == nil {
 					if err := hicicd.CreateConf(token, hicicdHost, "", "", confStr); err == nil {
-						fmt.Print("更新ConfigMap成功\n睡眠15秒，稍后重载Prometheus\n")
-						time.Sleep(time.Second * 15)
+						log.Print("更新ConfigMap成功\n睡眠30秒，稍后重载Prometheus\n")
+						time.Sleep(time.Second * 30)
 						if err := prome.ReloadServer(prometheusHost); err == nil {
-							fmt.Print("重载Prometheus成功\n")
+							log.Print("重载Prometheus成功\n")
 							md5 = libs.GetMd5(confStr)
 						} else {
-							fmt.Print("重载Prometheus失败！", err, "\n")
+							log.Print("重载Prometheus失败！", err, "\n")
 						}
 					} else {
-						fmt.Print("创建ConfgMap失败 ", err, "\n")
+						log.Print("创建ConfgMap失败 ", err, "\n")
 					}
 				} else {
-					fmt.Print("获取创建ConfigMap的Token失败，请确保hicicd服务正常。", err, "\n")
+					log.Print("获取创建ConfigMap的Token失败，请确保hicicd服务正常。", err, "\n")
+					time.Sleep(time.Second * 20)
 				}
 			} else {
-				fmt.Print("未检测到有新指标可加入监控,休眠15秒后再监测\n")
+				//log.Print("未检测到有新指标可加入监控,休眠15秒后再监测\n")
 				md5 = latestMd5
 			}
 		} else {
-			fmt.Print("获取接口数据异常，原因：", err, "\n")
+			log.Print("获取接口数据异常，原因：", err, "\n")
 		}
 
 	} else {
-		fmt.Print("配置文件Prometheus host格式有误，请以http://或者hppts://为前缀\n")
+		log.Print("配置文件Prometheus host格式有误，请以http://或者hppts://为前缀\n")
 	}
 	return md5
 }
