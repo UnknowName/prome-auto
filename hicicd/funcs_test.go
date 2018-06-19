@@ -8,7 +8,7 @@ import (
 )
 
 func TestLogin(t *testing.T) {
-	host := "http://localhost:8081"
+	host := "http://hicicd-hidevopsio.apps.cloud.vpclub.cn"
 	token, err := Login(host, "chengjianneng", "1234qwer")
 	fmt.Print("token is ",token,"\n")
 	fmt.Print("err is", err, "\n")

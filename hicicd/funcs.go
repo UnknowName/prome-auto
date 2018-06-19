@@ -29,7 +29,7 @@ func Login(host, username, password string) (token string, err error) {
 		err = json.Unmarshal(byteResp, &myToken)
 		if err == nil {
 			if myToken.Code == 200 {
-				token = myToken.Data
+				token = myToken.Data["token"]
 			} else {
 				err = errors.New(myToken.Message)
 			}

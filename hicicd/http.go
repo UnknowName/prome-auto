@@ -17,5 +17,5 @@ type Token struct {
 type Response struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
-	Data    string `json:"data"`
+	Data    map[string]string `json:"data"`
 }
