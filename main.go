@@ -48,8 +48,8 @@ func newRun(confFile, latestMd5 string) (md5 string) {
 				log.Print("检测到Prometheus API接口有新数据，执行更新ConfgMap动作\n")
 				if token, err := hicicd.Login(hicicdHost, username, password); err == nil {
 					if err := hicicd.CreateConf(token, hicicdHost, "", "", confStr); err == nil {
-						log.Print("更新ConfigMap成功睡眠30秒，稍后重载Prometheus\n")
-						time.Sleep(time.Second * 30)
+						log.Print("更新ConfigMap成功。睡眠50秒，稍后重载Prometheus\n")
+						time.Sleep(time.Second * 50)
 						if err := prome.ReloadServer(prometheusHost); err == nil {
 							log.Print("重载Prometheus成功\n")
 							md5 = libs.GetMd5(confStr)
